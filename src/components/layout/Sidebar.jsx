@@ -3,24 +3,38 @@ import { useAuth } from '../../auth/AuthContext'
 import { canAccessRoute } from '../../utils/rbac'
 
 const NAV = [
-  { to: '/dashboard', label: 'Dashboard', icon: '◫', permission: 'sync.read' },
-  { to: '/analytics', label: 'Analytics', icon: '📊', permission: 'analytics.read' },
+  {
+    to: '/dashboard',
+    label: 'Overview',
+    icon: '◫',
+    permission: 'sync.read',
+    altPermission: 'analytics.read',
+  },
   { to: '/farmers', label: 'Farmers', icon: '👨‍🌾', permission: 'farmers.read_list' },
   { to: '/dsr', label: 'DSR Queue', icon: '🎫', permission: 'dsr.read_list' },
   { to: '/cloud-recheck', label: 'Cloud Recheck', icon: '☁', permission: 'cloud_recheck.read' },
-  { to: '/ai/review', label: 'AI Review', icon: '🔬', permission: 'ai_review.read' },
-  { to: '/models', label: 'Models', icon: '🧠', permission: 'models.read' },
   { to: '/catalog', label: 'Catalog', icon: '📋', permission: 'catalog.read' },
   { to: '/advice', label: 'Advice CMS', icon: '💬', permission: 'advice_content.read' },
-  { to: '/kb', label: 'Knowledge Base', icon: '📚', permission: 'kb.read' },
-  { to: '/mandi', label: 'Mandi Feed', icon: '📈', permission: 'mandi_feed.read' },
-  { to: '/weather', label: 'Weather Feed', icon: '🌤', permission: 'weather_feed.read' },
+  {
+    to: '/feeds',
+    label: 'Market & Weather',
+    icon: '📈',
+    permission: 'mandi_feed.read',
+    altPermission: 'weather_feed.read',
+  },
   { to: '/l10n/locales', label: 'Locales', icon: '🌐', permission: 'l10n.read' },
   { to: '/l10n/strings', label: 'Strings', icon: '🔤', permission: 'l10n.read' },
   { to: '/users', label: 'Admin Users', icon: '👤', permission: 'admin_users.read' },
   { to: '/audit', label: 'Audit Log', icon: '📜', permission: 'audit.read' },
   { to: '/settings/threshold', label: 'Pest Threshold', icon: '⚙', permission: 'models.set_threshold' },
 ]
+
+function navVisible(grants, item) {
+  if (grants.some((g) => g.role === 'super_admin')) return true
+  if (canAccessRoute(grants, item.permission)) return true
+  if (item.altPermission && canAccessRoute(grants, item.altPermission)) return true
+  return false
+}
 
 function LeafLogo() {
   return (
@@ -43,9 +57,7 @@ export function Sidebar() {
   const { adminUser } = useAuth()
   const grants = adminUser?.grants ?? []
 
-  const visible = NAV.filter(
-    (item) => canAccessRoute(grants, item.permission) || grants.some((g) => g.role === 'super_admin'),
-  )
+  const visible = NAV.filter((item) => navVisible(grants, item))
 
   return (
     <aside className="w-64 shrink-0 bg-ak-primary text-white flex flex-col min-h-screen">

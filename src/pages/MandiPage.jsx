@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { getMandi, refreshMandi, updateMandi } from '../api/admin'
 import { getApiError } from '../api/client'
-import { Header } from '../components/layout/Header'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Loading, PageError } from '../components/ui/Loading'
 import { Table } from '../components/ui/Table'
 
-export default function MandiPage() {
+export function MandiFeedContent() {
   const [crop, setCrop] = useState('')
   const [mandi, setMandi] = useState('')
   const [rows, setRows] = useState([])
@@ -34,7 +33,7 @@ export default function MandiPage() {
 
   useEffect(() => {
     load()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function saveRow(row) {
     const price = prompt('New price per maund', row.price_per_maund ?? row.pricePerMaund)
@@ -62,8 +61,6 @@ export default function MandiPage() {
 
   return (
     <>
-      <Header title="Mandi feed" subtitle="Edit crop prices shown in farmer app" />
-
       <Card className="mb-6">
         <div className="flex flex-wrap gap-4 items-end">
           <Input label="Crop" value={crop} onChange={(e) => setCrop(e.target.value)} placeholder="wheat" />

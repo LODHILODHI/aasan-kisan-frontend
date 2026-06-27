@@ -1,6 +1,12 @@
 import { cellValue, rowKey } from '../../utils/format'
 
-export function Table({ columns, rows, emptyMessage = 'No data', keyField = 'id' }) {
+export function Table({
+  columns,
+  rows,
+  emptyMessage = 'No data',
+  keyField = 'id',
+  rowClassName,
+}) {
   if (!rows?.length) {
     return (
       <p className="text-center text-ak-muted py-10 text-sm">{emptyMessage}</p>
@@ -26,7 +32,9 @@ export function Table({ columns, rows, emptyMessage = 'No data', keyField = 'id'
           {rows.map((row, i) => (
             <tr
               key={rowKey(row[keyField], i)}
-              className="border-b border-ak-border/60 hover:bg-ak-pale/80 transition-colors"
+              className={`border-b border-ak-border/60 hover:bg-ak-pale/80 transition-colors ${
+                rowClassName?.(row, i) ?? ''
+              }`}
             >
               {columns.map((col) => (
                 <td key={col.key} className="px-6 py-3.5 text-ak-text">

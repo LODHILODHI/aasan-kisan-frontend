@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getWeatherFeeds, updateWeather } from '../api/admin'
 import { getApiError } from '../api/client'
-import { Header } from '../components/layout/Header'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -9,14 +8,7 @@ import { Input, Select } from '../components/ui/Input'
 import { Loading, PageError } from '../components/ui/Loading'
 import { Table } from '../components/ui/Table'
 
-const EMPTY_PAYLOAD = {
-  currentTemp: 32,
-  feelsLike: 34,
-  condition: 'clear',
-  warning: '',
-}
-
-export default function WeatherPage() {
+export function WeatherFeedContent() {
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
   const [error, setError] = useState('')
@@ -107,11 +99,6 @@ export default function WeatherPage() {
 
   return (
     <>
-      <Header
-        title="Weather feed"
-        subtitle="All district forecasts — edit inline like Mandi feed"
-      />
-
       {successMsg && (
         <p className="mb-4 text-sm font-medium text-ak-brand bg-ak-light border border-ak-border rounded-xl px-4 py-3">
           {successMsg}

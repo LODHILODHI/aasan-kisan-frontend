@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { getCloudRecheck, reviewCloudRecheck } from '../api/admin'
 import { getApiError } from '../api/client'
 import { cellValue } from '../utils/format'
@@ -25,6 +25,10 @@ function stateTone(state) {
 }
 
 export default function CloudRecheckPage() {
+  const [searchParams] = useSearchParams()
+  const farmerId = searchParams.get('farmerId') ?? ''
+  const highlightId = searchParams.get('highlight') ?? ''
+
   const [items, setItems] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -39,7 +43,10 @@ export default function CloudRecheckPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await getCloudRecheck({ status })
+      const res = await getCloudRecheck({
+        status,
+        farmerId: farmerId || undefined,
+      })
       const list = res.data?.items ?? res.data ?? res.items ?? []
       setItems(Array.isArray(list) ? list : [])
     } catch (err) {
@@ -51,7 +58,13 @@ export default function CloudRecheckPage() {
 
   useEffect(() => {
     load()
-  }, [status]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, farmerId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!highlightId || !items.length) return
+    const row = items.find((r) => r.id === highlightId)
+    if (row) openReview(row)
+  }, [highlightId, items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openReview(row) {
     setReviewing(row)
@@ -91,7 +104,22 @@ export default function CloudRecheckPage() {
 
   return (
     <>
-      <Header title="Cloud recheck" subtitle="Review low-confidence pest detections" />
+      <Header
+        title="Cloud recheck"
+        subtitle={
+          farmerId
+            ? `Filtered to farmer ${farmerId.slice(0, 8)}… — low-confidence pest detections`
+            : 'Review low-confidence pest detections'
+        }
+      />
+
+      {farmerId && (
+        <p className="mb-4 text-sm">
+          <Link to="/cloud-recheck" className="text-ak-brand font-semibold hover:underline">
+            Clear farmer filter
+          </Link>
+        </p>
+      )}
 
       <Card className="mb-6">
         <Select label="Status filter" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -199,6 +227,9 @@ export default function CloudRecheckPage() {
             ]}
             rows={items}
             emptyMessage="Queue is empty"
+            rowClassName={(r) =>
+              r.id === highlightId ? 'bg-ak-light ring-1 ring-inset ring-ak-brand/40' : ''
+            }
           />
         </Card>
       )}

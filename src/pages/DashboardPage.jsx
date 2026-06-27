@@ -1,15 +1,61 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { getAudit, getSyncHealth } from '../api/admin'
 import { getApiError } from '../api/client'
 import { cellValue } from '../utils/format'
+import { hasPermission } from '../utils/rbac'
 import { Header } from '../components/layout/Header'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Loading, PageError } from '../components/ui/Loading'
+import { PageTabs } from '../components/ui/PageTabs'
 import { Table } from '../components/ui/Table'
+import { AnalyticsContent } from './AnalyticsPage'
+
+const OVERVIEW_TAB = 'overview'
+const ANALYTICS_TAB = 'analytics'
 
 export default function DashboardPage() {
+  const { adminUser } = useAuth()
+  const grants = adminUser?.grants ?? []
+  const canAnalytics = hasPermission(grants, 'analytics.read')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const requestedTab = searchParams.get('tab')
+  const activeTab =
+    requestedTab === ANALYTICS_TAB && canAnalytics ? ANALYTICS_TAB : OVERVIEW_TAB
+
+  const tabs = [
+    { id: OVERVIEW_TAB, label: 'Dashboard' },
+    ...(canAnalytics ? [{ id: ANALYTICS_TAB, label: 'Analytics' }] : []),
+  ]
+
+  function setTab(tabId) {
+    const next = new URLSearchParams(searchParams)
+    if (tabId === OVERVIEW_TAB) {
+      next.delete('tab')
+    } else {
+      next.set('tab', tabId)
+    }
+    setSearchParams(next, { replace: true })
+  }
+
+  const subtitle =
+    activeTab === ANALYTICS_TAB
+      ? 'Ops overview, consent, telemetry, and classifier metrics'
+      : 'Sync health & recent audit activity'
+
+  return (
+    <>
+      <Header title="Overview" subtitle={subtitle} />
+      <PageTabs tabs={tabs} active={activeTab} onChange={setTab} />
+      {activeTab === ANALYTICS_TAB ? <AnalyticsContent /> : <DashboardOverview />}
+    </>
+  )
+}
+
+function DashboardOverview() {
   const [sync, setSync] = useState(null)
   const [audit, setAudit] = useState(null)
   const [error, setError] = useState('')
@@ -39,68 +85,55 @@ export default function DashboardPage() {
   const metrics = sync?.metrics ?? sync ?? {}
   const recentAudit = audit?.items ?? audit?.entries ?? []
 
+  if (loading) return <Loading />
+  if (error) return <PageError message={error} onRetry={load} />
+
   return (
-    <>
-      <Header
-        title="Dashboard"
-        subtitle="Sync health & recent audit activity"
-      />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Pending sync" value={cellValue(metrics.pending_batches ?? metrics.pending)} />
+        <StatCard label="Failed (24h)" value={cellValue(metrics.failed_24h ?? metrics.failedLast24h)} />
+        <StatCard label="Detections synced" value={cellValue(metrics.detections_synced)} />
+        <StatCard label="Last batch" value={formatTime(metrics.last_batch_at ?? metrics.lastBatchAt)} />
+      </div>
 
-      {loading && <Loading />}
-      {error && <PageError message={error} onRetry={load} />}
-
-      {!loading && !error && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Pending sync" value={cellValue(metrics.pending_batches ?? metrics.pending)} />
-            <StatCard label="Failed (24h)" value={cellValue(metrics.failed_24h ?? metrics.failedLast24h)} />
-            <StatCard label="Detections synced" value={cellValue(metrics.detections_synced)} />
-            <StatCard label="Last batch" value={formatTime(metrics.last_batch_at ?? metrics.lastBatchAt)} />
-          </div>
-
-          <Card title="Quick links" subtitle="Common admin tasks">
-            <div className="flex flex-wrap gap-3">
-              <QuickLink to="/farmers" label="Farmer support" />
-              <QuickLink to="/advice" label="Advice CMS" />
-              <QuickLink to="/cloud-recheck" label="Cloud recheck queue" />
-              <QuickLink to="/mandi" label="Mandi prices" />
-              <QuickLink to="/audit" label="Full audit log" />
-              <QuickLink to="/analytics" label="Analytics" />
-              <QuickLink to="/ai/review" label="AI review queue" />
-              <QuickLink to="/models" label="Model registry" />
-              <QuickLink to="/kb" label="Knowledge base" />
-              <QuickLink to="/dsr" label="DSR queue" />
-            </div>
-          </Card>
-
-          <Card title="Recent audit" subtitle="Last 5 entries">
-            <Table
-              emptyMessage="No audit entries yet"
-              columns={[
-                { key: 'action', label: 'Action', render: (r) => cellValue(r.action ?? r.event_type) },
-                { key: 'actor', label: 'Actor', render: (r) => cellValue(r.actor_email ?? r.actorId ?? r.actor_id) },
-                {
-                  key: 'at',
-                  label: 'When',
-                  render: (r) => formatTime(r.created_at ?? r.timestamp),
-                },
-                {
-                  key: 'status',
-                  label: 'Status',
-                  render: (r) => (
-                    <Badge tone={r.outcome === 'success' ? 'success' : 'muted'}>
-                      {cellValue(r.outcome ?? r.status, 'ok')}
-                    </Badge>
-                  ),
-                },
-              ]}
-              rows={Array.isArray(recentAudit) ? recentAudit : []}
-              keyField="id"
-            />
-          </Card>
+      <Card title="Quick links" subtitle="Common admin tasks">
+        <div className="flex flex-wrap gap-3">
+          <QuickLink to="/farmers" label="Farmer support" />
+          <QuickLink to="/advice" label="Advice CMS" />
+          <QuickLink to="/cloud-recheck" label="Cloud recheck queue" />
+          <QuickLink to="/feeds?tab=mandi" label="Mandi prices" />
+          <QuickLink to="/audit" label="Full audit log" />
+          <QuickLink to="/dsr" label="DSR queue" />
         </div>
-      )}
-    </>
+      </Card>
+
+      <Card title="Recent audit" subtitle="Last 5 entries">
+        <Table
+          emptyMessage="No audit entries yet"
+          columns={[
+            { key: 'action', label: 'Action', render: (r) => cellValue(r.action ?? r.event_type) },
+            { key: 'actor', label: 'Actor', render: (r) => cellValue(r.actor_email ?? r.actorId ?? r.actor_id) },
+            {
+              key: 'at',
+              label: 'When',
+              render: (r) => formatTime(r.created_at ?? r.timestamp),
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (r) => (
+                <Badge tone={r.outcome === 'success' ? 'success' : 'muted'}>
+                  {cellValue(r.outcome ?? r.status, 'ok')}
+                </Badge>
+              ),
+            },
+          ]}
+          rows={Array.isArray(recentAudit) ? recentAudit : []}
+          keyField="id"
+        />
+      </Card>
+    </div>
   )
 }
 

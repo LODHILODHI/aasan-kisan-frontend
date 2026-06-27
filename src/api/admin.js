@@ -24,8 +24,94 @@ export async function getFarmers(params = {}) {
   return data
 }
 
+export async function exportFarmersCsv(params = {}, headers = {}) {
+  const res = await api.get('/v1/admin/farmers/export', {
+    params,
+    headers,
+    responseType: 'blob',
+  })
+  return res
+}
+
 export async function getFarmer(id, headers = {}) {
   const { data } = await api.get(`/v1/admin/farmers/${id}`, { headers })
+  return data
+}
+
+export async function getFarmerAnalytics(id, days = 30) {
+  const { data } = await api.get(`/v1/admin/farmers/${id}/analytics`, {
+    params: { days },
+  })
+  return data
+}
+
+export async function getFarmerAuditLog(id, params = {}) {
+  const { data } = await api.get(`/v1/admin/farmers/${id}/audit-log`, { params })
+  return data
+}
+
+export async function getFarmerActionsAuditLog(params = {}) {
+  const { data } = await api.get('/v1/admin/audit-log', { params })
+  return data
+}
+
+export async function createFarmer(body) {
+  const { data } = await api.post('/v1/admin/farmers', body)
+  return data
+}
+
+export async function patchFarmerProfile(id, body) {
+  const { data } = await api.patch(`/v1/admin/farmers/${id}`, body)
+  return data
+}
+
+export async function overrideFarmerConsent(id, body, headers = {}) {
+  const { data } = await api.put(`/v1/admin/farmers/${id}/consent`, body, { headers })
+  return data
+}
+
+export async function getFarmerNotes(id) {
+  const { data } = await api.get(`/v1/admin/farmers/${id}/notes`)
+  return data
+}
+
+export async function createFarmerNote(id, body) {
+  const { data } = await api.post(`/v1/admin/farmers/${id}/notes`, body)
+  return data
+}
+
+export async function getFarmerSessions(id) {
+  const { data } = await api.get(`/v1/admin/farmers/${id}/sessions`)
+  return data
+}
+
+export async function revokeFarmerSessions(id, body) {
+  const { data } = await api.post(`/v1/admin/farmers/${id}/sessions/revoke`, body)
+  return data
+}
+
+export async function suspendFarmer(id, body, headers = {}) {
+  const { data } = await api.post(`/v1/admin/farmers/${id}/suspend`, body, { headers })
+  return data
+}
+
+export async function unsuspendFarmer(id) {
+  const { data } = await api.post(`/v1/admin/farmers/${id}/unsuspend`)
+  return data
+}
+
+export async function forceEraseFarmer(id, body, headers = {}) {
+  const { data } = await api.post(`/v1/admin/farmers/${id}/force-erase`, body, { headers })
+  return data
+}
+
+export async function deleteDetection(id, headers = {}) {
+  const { data } = await api.delete(`/v1/admin/detections/${id}`, { headers })
+  return data
+}
+
+export async function adminStepUp(body) {
+  const { data } = await api.post('/v1/admin/auth/stepup', body)
   return data
 }
 
@@ -185,75 +271,7 @@ export async function updatePestThreshold(body) {
   return data
 }
 
-// —— Phase 3: Models ——
-export async function getModels() {
-  const { data } = await api.get('/v1/admin/models')
-  return data
-}
-
-export async function registerModel(body) {
-  const { data } = await api.post('/v1/admin/models', body)
-  return data
-}
-
-export async function stageModel(id, body) {
-  const { data } = await api.post(`/v1/admin/models/${id}/stage`, body)
-  return data
-}
-
-export async function promoteModel(id, body = {}) {
-  const { data } = await api.post(`/v1/admin/models/${id}/promote`, body)
-  return data
-}
-
-export async function rollbackModel(id, body = {}) {
-  const { data } = await api.post(`/v1/admin/models/${id}/rollback`, body)
-  return data
-}
-
-// —— Phase 3: AI review ——
-export async function getAiReviewItems(params = {}) {
-  const { data } = await api.get('/v1/admin/ai/review/items', { params })
-  return data
-}
-
-export async function assignAiReviewItem(id) {
-  const { data } = await api.post(`/v1/admin/ai/review/items/${id}/assign`)
-  return data
-}
-
-export async function labelAiReviewItem(id, body) {
-  const { data } = await api.post(`/v1/admin/ai/review/items/${id}/label`, body)
-  return data
-}
-
-export async function adjudicateAiReviewItem(id, body) {
-  const { data } = await api.post(`/v1/admin/ai/review/items/${id}/adjudicate`, body)
-  return data
-}
-
-// —— Phase 3: Knowledge base ——
-export async function getKbSources() {
-  const { data } = await api.get('/v1/admin/kb/sources')
-  return data
-}
-
-export async function createKbSource(body) {
-  const { data } = await api.post('/v1/admin/kb/sources', body)
-  return data
-}
-
-export async function getKbChunks(sourceId) {
-  const { data } = await api.get(`/v1/admin/kb/sources/${sourceId}/chunks`)
-  return data
-}
-
-export async function kbRetrieve(body) {
-  const { data } = await api.post('/v1/admin/kb/retrieve', body)
-  return data
-}
-
-// —— Phase 3: Analytics ——
+// —— Analytics ——
 export async function getAnalyticsOverview() {
   const { data } = await api.get('/v1/admin/analytics/overview')
   return data
@@ -264,12 +282,17 @@ export async function getAnalyticsConsent() {
   return data
 }
 
+export async function getAnalyticsTelemetry() {
+  const { data } = await api.get('/v1/admin/analytics/telemetry')
+  return data
+}
+
 export async function getAnalyticsClassifier() {
   const { data } = await api.get('/v1/admin/analytics/classifier')
   return data
 }
 
-// —— Phase 3: DSR queue ——
+// —— DSR queue ——
 export async function getDsrQueue(params = {}) {
   const { data } = await api.get('/v1/admin/dsr', { params })
   return data

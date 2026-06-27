@@ -1,17 +1,18 @@
 import { useAuth } from '../../auth/AuthContext'
 import { Button } from '../ui/Button'
 
-export function Header({ title, subtitle }) {
+export function Header({ title, subtitle, action }) {
   const { adminUser, logout } = useAuth()
   const role = adminUser?.grants?.[0]?.role?.replace(/_/g, ' ') ?? 'admin'
 
   return (
     <header className="flex items-center justify-between gap-4 mb-8">
-      <div>
+      <div className="min-w-0 flex-1">
         <h1 className="text-2xl font-extrabold text-ak-text tracking-tight">{title}</h1>
         {subtitle && <p className="text-ak-muted text-sm mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
+        {action}
         <div className="text-right hidden sm:block">
           <div className="text-sm font-semibold text-ak-text">{adminUser?.email}</div>
           <div className="text-xs text-ak-muted capitalize">{role}</div>
